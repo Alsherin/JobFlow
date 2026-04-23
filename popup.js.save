@@ -1,0 +1,159 @@
+const saveBtn = document.getElementById("saveBtn");
+const list = document.getElementById("list");
+
+saveBtn.addEventListener("click", () => {
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+
+    let fullTitle = tab.title || "No title";
+    let title = fullTitle;
+    let company = "Unknown";
+
+    if (fullTitle.includes("|")) {
+      const parts = fullTitle.split("|");
+      title = parts[0].trim();
+      company = parts[1]?.trim() || "Unknown";
+    }
+
+    const job = {
+      id: Date.now(),
+      title,
+      company,
+      link: tab.url,
+      status: "Saved"
+    };
+
+    chrome.storage.local.get({ jobs: [] }, (data) => {
+      const updatedJobs = [...data.jobs, job];
+
+      chrome.storage.local.set({ jobs: updatedJobs }, () => {
+        renderList(updatedJobs);
+      });
+    });
+
+  });
+
+});
+
+function renderList(jobs) {
+  list.innerHTML = "";
+
+  jobs.forEach((job) => {
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <strong>${job.title}</strong><br/>
+      ${job.company}<br/>
+      Status: ${job.status}<br/>
+      <button data-id="${job.id}" class="toggleBtn">Toggle</button>
+      <button data-id="${job.id}" class="deleteBtn">Delete</button>
+      <hr/>
+    `;
+
+    list.appendChild(li);
+  });
+
+  attachEvents(jobs);
+}
+
+function attachEvents(jobs) {
+
+  document.querySelectorAll(".toggleBtn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.dataset.id);
+
+      const updatedJobs = jobs.map(job => {
+        if (job.id === id) {
+          return {
+            ...job,
+            status: job.status === "Saved" ? "Applied" : "Saved"
+          };
+        }
+        return job;
+      });
+
+      chrome.storage.local.set({ jobs: updatedJobs }, () => {
+        renderList(updatedJobs);
+      });
+    });
+  });
+
+  document.querySelectorAll(".deleteBtn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.dataset.id);
+
+      const updatedJobs = jobs.filter(job => job.id !== id);
+
+      chrome.storage.local.set({ jobs: updatedJobs }, () => {
+        renderList(updatedJobs);
+      });
+    });
+  });
+
+}
+
+// Load existing jobs
+chrome.storage.local.get({ jobs: [] }, (data) => {
+  renderList(data.jobs);
+});const saveBtn = document.getElementById("saveBtn");
+const list = document.getElementById("list");
+
+saveBtn.addEventListener("click", () => {
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+
+    // Extract title + company from page title
+    let fullTitle = tab.title || "No title";
+    let title = fullTitle;
+    let company = "Unknown";
+
+    if (fullTitle.includes("|")) {
+      const parts = fullTitle.split("|");
+      title = parts[0].trim();
+      company = parts[1]?.trim() || "Unknown";
+    }
+
+    const job = {
+      title: title,
+      company: company,
+      link: tab.url
+    };
+
+    chrome.storage.local.get({ jobs: [] }, (data) => {
+
+      const exists = data.jobs.some(j => j.link === job.link);
+      const updatedJobs = exists ? data.jobs : [...data.jobs, job];
+
+      chrome.storage.local.set({ jobs: updatedJobs }, () => {
+        renderList(updatedJobs);
+      });
+
+    });
+
+  });
+
+});
+
+function renderList(jobs) {
+  list.innerHTML = "";
+
+  jobs.forEach((job) => {
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <strong>${job.title}</strong><br/>
+      ${job.company}<br/>
+      <a href="${job.link}" target="_blank">View Job</a>
+      <hr/>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+// Load saved jobs
+chrome.storage.local.get({ jobs: [] }, (data) => {
+  renderList(data.jobs);
+});

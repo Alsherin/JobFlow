@@ -1,9 +1,9 @@
 {
-  "name": "My First Extension",
+  "name": "LinkedIn Job Saver",
   "version": "1.0",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab", "storage"]
+  "permissions": ["storage", "tabs"]
 }
